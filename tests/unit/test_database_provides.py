@@ -1,6 +1,8 @@
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
 import unittest
+from abc import ABC, abstractmethod
+from typing import Tuple
 from unittest.mock import Mock, patch
 
 from charms.data_platform_libs.v0.database_provides import (
@@ -64,21 +66,17 @@ class KafkaCharm(CharmBase):
         pass
 
 
-class TestDataProvides(unittest.TestCase):
-    charm = DatabaseCharm
-    metadata = DATABASE_METADATA
-    relation_name = DATABASE_RELATION_NAME
-    app_name = "database"
+class DataProvidesBaseTests(ABC):
+
+    @abstractmethod
+    def get_harness(self) -> Tuple[Harness, int]:
+        pass
 
     def setUp(self):
-        self.harness = Harness(self.charm, meta=self.metadata)
-        self.addCleanup(self.harness.cleanup)
+        self.harness, self.rel_id = self.get_harness()
 
-        # Set up the initial relation and hooks.
-        self.rel_id = self.harness.add_relation(self.relation_name, "application")
-        self.harness.add_relation_unit(self.rel_id, "application/0")
-        self.harness.set_leader(True)
-        self.harness.begin_with_initial_hooks()
+    def tearDown(self) -> None:
+        self.harness.cleanup()
 
     def test_diff(self):
         """Asserts that the charm library correctly returns a diff of the relation data."""
@@ -125,7 +123,21 @@ class TestDataProvides(unittest.TestCase):
         }
 
 
-class TestDatabaseProvides(TestDataProvides):
+class TestDatabaseProvides(DataProvidesBaseTests, unittest.TestCase):
+    charm = DatabaseCharm
+    metadata = DATABASE_METADATA
+    relation_name = DATABASE_RELATION_NAME
+    app_name = "database"
+
+    def get_harness(self) -> Tuple[Harness, int]:
+        harness = Harness(self.charm, meta=self.metadata)
+        # Set up the initial relation and hooks.
+        rel_id = harness.add_relation(self.relation_name, "application")
+        harness.add_relation_unit(rel_id, "application/0")
+        harness.set_leader(True)
+        harness.begin_with_initial_hooks()
+        return harness, rel_id
+
     @patch.object(DatabaseCharm, "_on_database_requested")
     def emit_database_requested_event(self, _on_database_requested):
         # Emit the database requested event.
@@ -160,8 +172,8 @@ class TestDatabaseProvides(TestDataProvides):
 
         # Check that the endpoints are present in the relation.
         assert (
-            self.harness.get_relation_data(self.rel_id, "database")["endpoints"]
-            == "host1:port,host2:port"
+                self.harness.get_relation_data(self.rel_id, "database")["endpoints"]
+                == "host1:port,host2:port"
         )
 
     def test_set_read_only_endpoints(self):
@@ -171,8 +183,8 @@ class TestDatabaseProvides(TestDataProvides):
 
         # Check that the endpoints are present in the relation.
         assert (
-            self.harness.get_relation_data(self.rel_id, "database")["read-only-endpoints"]
-            == "host1:port,host2:port"
+                self.harness.get_relation_data(self.rel_id, "database")["read-only-endpoints"]
+                == "host1:port,host2:port"
         )
 
     def test_set_additional_fields(self):
