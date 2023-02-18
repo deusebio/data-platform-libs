@@ -18,7 +18,7 @@ from charms.data_platform_libs.v0.data_interfaces import (
     KafkaRequires,
     TopicCreatedEvent,
 )
-from ops.charm import ActionEvent, CharmBase
+from ops.charm import ActionEvent, CharmBase, RelationBrokenEvent
 from ops.main import main
 from ops.model import ActiveStatus
 
@@ -49,6 +49,9 @@ class ApplicationCharm(CharmBase):
         )
         self.framework.observe(
             self.first_database.on.endpoints_changed, self._on_first_database_endpoints_changed
+        )
+        self.framework.observe(
+            self.on["first-database"].relation_broken, self._on_relation_broken
         )
 
         # Events related to the second database that is requested
@@ -199,6 +202,9 @@ class ApplicationCharm(CharmBase):
     def _on_reset_unit_status(self, _: ActionEvent):
         """Handle the reset of status message for the unit."""
         self.unit.status = ActiveStatus()
+
+    def _on_relation_broken(self, _: RelationBrokenEvent):
+        self.first_database.is_resource_created()
 
 
 if __name__ == "__main__":
