@@ -84,7 +84,10 @@ class DatabaseCharm(CharmBase):
         connection.autocommit = True
         cursor = connection.cursor()
         # Create the database, user and password. Also gives the user access to the database.
-        cursor.execute(f"CREATE DATABASE {database};")
+        try:
+            cursor.execute(f"CREATE DATABASE {database};")
+        except:
+            pass
         cursor.execute(f"CREATE USER {username} WITH ENCRYPTED PASSWORD '{password}';")
         cursor.execute(f"GRANT ALL PRIVILEGES ON DATABASE {database} TO {username};")
         # Add the roles to the user.

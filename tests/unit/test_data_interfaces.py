@@ -553,11 +553,17 @@ class TestDatabaseRequiresNoRelations(DataRequirerBaseTests, unittest.TestCase):
         )
         self.assertEqual(self.harness.charm.get_relation_size(logs.output[0]), 1)
 
+        # Add multiple relation
+        new_rel_id = self.add_relation(self.harness, self.provider + "-2")
+        self.harness.update_relation_data(
+            new_rel_id, self.provider + "-2", {"username": "username-2", "password": "password-2"}
+        )
+
         with self.assertLogs(logger, "INFO") as logs:
             self.harness.remove_relation(rel_id)
 
         # Within the relation broken event the requirer should not show any relation
-        self.assertEqual(self.harness.charm.get_relation_size(logs.output[0]), 0)
+        self.assertEqual(self.harness.charm.get_relation_size(logs.output[0]), 1)
         self.assertEqual(self.harness.charm.get_prefix(logs.output[0]), "on_relation_broken")
 
 

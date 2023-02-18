@@ -134,6 +134,9 @@ class ApplicationCharm(CharmBase):
         logger.info(f"first database credentials: {event.username} {event.password}")
         self.unit.status = ActiveStatus("received database credentials of the first database")
 
+        logger.info(f"Is resource created: {self.first_database.is_resource_created()}")
+        logger.info(f"Number of relations: {len(self.first_database.relations)}")
+
     def _on_first_database_endpoints_changed(self, event: DatabaseEndpointsChangedEvent) -> None:
         """Event triggered when the read/write endpoints of the database change."""
         logger.info(f"first database endpoints have been changed to: {event.endpoints}")
@@ -204,7 +207,9 @@ class ApplicationCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _on_relation_broken(self, _: RelationBrokenEvent):
-        self.first_database.is_resource_created()
+        logger.info(f"Data: {[dict(relation.data) for relation in self.first_database.relations]}")
+        logger.info(f"Is resource created: {self.first_database.is_resource_created()}")
+        logger.info(f"Number of relations: {len(self.first_database.relations)}")
 
 
 if __name__ == "__main__":
